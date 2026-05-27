@@ -63,6 +63,11 @@ func main() {
 - `ResolveSelector` resolves operation IDs, `#/operations/{id}`, and
   `#/types/{rootType}/fields/{fieldName}` pointers.
 
+## Consumers
+
+See [Consumer Readiness](docs/consumer-readiness.md) for `apitools`, OpenUdon,
+and UWS source-profile planning boundaries.
+
 ## Verification
 
 ```bash
