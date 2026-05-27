@@ -1,0 +1,47 @@
+"""Library API schema."""
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+directive @tag(name: String! = "default") repeatable on OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM_VALUE | INPUT_FIELD_DEFINITION
+
+scalar DateTime
+
+interface Node {
+  """Stable identifier."""
+  id: ID!
+}
+
+type Book implements Node @tag(name: "catalog") {
+  id: ID!
+  title: String!
+  status: BookStatus! @tag(name: "state")
+}
+
+union SearchResult = Book
+
+enum BookStatus {
+  AVAILABLE
+  CHECKED_OUT @tag(name: "busy")
+}
+
+input BookFilter {
+  status: BookStatus = AVAILABLE @tag(name: "defaulted")
+  limit: Int = 10
+}
+
+type Query {
+  """Find a book by id."""
+  book(id: ID! @tag(name: "lookup")): Book
+  search(filter: BookFilter): [SearchResult!]!
+}
+
+type Mutation {
+  checkout(id: ID!, dueAt: DateTime): Book
+}
+
+type Subscription {
+  bookUpdated(id: ID): Book
+}

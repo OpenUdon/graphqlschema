@@ -1,0 +1,181 @@
+{
+  "data": {
+    "__schema": {
+      "description": "Library API schema.",
+      "queryType": {"name": "Query"},
+      "mutationType": {"name": "Mutation"},
+      "subscriptionType": {"name": "Subscription"},
+      "types": [
+        {
+          "kind": "OBJECT",
+          "name": "Query",
+          "description": null,
+          "fields": [
+            {
+              "name": "book",
+              "description": "Find a book by id.",
+              "args": [
+                {
+                  "name": "id",
+                  "description": "Book id.",
+                  "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "ID", "ofType": null}},
+                  "defaultValue": null
+                }
+              ],
+              "type": {"kind": "OBJECT", "name": "Book", "ofType": null}
+            },
+            {
+              "name": "search",
+              "description": null,
+              "args": [
+                {
+                  "name": "filter",
+                  "description": null,
+                  "type": {"kind": "INPUT_OBJECT", "name": "BookFilter", "ofType": null},
+                  "defaultValue": null
+                }
+              ],
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {"kind": "UNION", "name": "SearchResult", "ofType": null}
+                  }
+                }
+              }
+            }
+          ],
+          "interfaces": []
+        },
+        {
+          "kind": "OBJECT",
+          "name": "Mutation",
+          "fields": [
+            {
+              "name": "checkout",
+              "args": [
+                {
+                  "name": "id",
+                  "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "ID", "ofType": null}},
+                  "defaultValue": null
+                },
+                {
+                  "name": "dueAt",
+                  "type": {"kind": "SCALAR", "name": "DateTime", "ofType": null},
+                  "defaultValue": null
+                }
+              ],
+              "type": {"kind": "OBJECT", "name": "Book", "ofType": null}
+            }
+          ]
+        },
+        {
+          "kind": "OBJECT",
+          "name": "Subscription",
+          "fields": [
+            {
+              "name": "bookUpdated",
+              "args": [
+                {
+                  "name": "id",
+                  "type": {"kind": "SCALAR", "name": "ID", "ofType": null},
+                  "defaultValue": null
+                }
+              ],
+              "type": {"kind": "OBJECT", "name": "Book", "ofType": null}
+            }
+          ]
+        },
+        {
+          "kind": "INTERFACE",
+          "name": "Node",
+          "fields": [
+            {
+              "name": "id",
+              "description": "Stable identifier.",
+              "args": [],
+              "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "ID", "ofType": null}}
+            }
+          ],
+          "possibleTypes": [{"kind": "OBJECT", "name": "Book", "ofType": null}]
+        },
+        {
+          "kind": "OBJECT",
+          "name": "Book",
+          "description": null,
+          "interfaces": [{"kind": "INTERFACE", "name": "Node", "ofType": null}],
+          "fields": [
+            {
+              "name": "id",
+              "args": [],
+              "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "ID", "ofType": null}}
+            },
+            {
+              "name": "title",
+              "args": [],
+              "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "String", "ofType": null}}
+            },
+            {
+              "name": "status",
+              "args": [],
+              "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "ENUM", "name": "BookStatus", "ofType": null}}
+            }
+          ]
+        },
+        {
+          "kind": "UNION",
+          "name": "SearchResult",
+          "possibleTypes": [{"kind": "OBJECT", "name": "Book", "ofType": null}]
+        },
+        {
+          "kind": "ENUM",
+          "name": "BookStatus",
+          "enumValues": [
+            {"name": "AVAILABLE", "description": null},
+            {"name": "CHECKED_OUT", "description": "Checked out."}
+          ]
+        },
+        {
+          "kind": "INPUT_OBJECT",
+          "name": "BookFilter",
+          "inputFields": [
+            {
+              "name": "status",
+              "description": null,
+              "type": {"kind": "ENUM", "name": "BookStatus", "ofType": null},
+              "defaultValue": "AVAILABLE"
+            },
+            {
+              "name": "limit",
+              "description": null,
+              "type": {"kind": "SCALAR", "name": "Int", "ofType": null},
+              "defaultValue": "10"
+            }
+          ]
+        },
+        {"kind": "SCALAR", "name": "DateTime"}
+      ],
+      "directives": [
+        {
+          "name": "tag",
+          "description": "Tags schema elements.",
+          "locations": ["OBJECT", "FIELD_DEFINITION", "ARGUMENT_DEFINITION", "ENUM_VALUE", "INPUT_FIELD_DEFINITION"],
+          "isRepeatable": true,
+          "args": [
+            {
+              "name": "name",
+              "description": null,
+              "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "String", "ofType": null}},
+              "defaultValue": "\"default\""
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
