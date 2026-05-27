@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 
@@ -42,6 +43,12 @@ func ParseIntrospection(data []byte) (*Model, error) {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
 	if err := dec.Decode(&raw); err != nil {
+		return nil, fmt.Errorf("parse graphql introspection JSON: %w", err)
+	}
+	var trailing any
+	if err := dec.Decode(&trailing); err == nil {
+		return nil, fmt.Errorf("parse graphql introspection JSON: trailing data after root object")
+	} else if err != io.EOF {
 		return nil, fmt.Errorf("parse graphql introspection JSON: %w", err)
 	}
 	if raw == nil {
@@ -88,6 +95,7 @@ func ParseIntrospectionMap(raw map[string]any) (*Model, error) {
 	if err := parseIntrospectionDirectives(model, schemaMap); err != nil {
 		return nil, err
 	}
+	model.buildOperations()
 	return model, nil
 }
 
@@ -115,7 +123,7 @@ func modelFromAST(schema *ast.Schema) *Model {
 		if def.BuiltIn && (def.Kind != ast.Scalar || strings.HasPrefix(def.Name, "__")) {
 			continue
 		}
-		model.Types[def.Name] = typeDefinitionFromAST(def)
+		model.Types[def.Name] = typeDefinitionFromAST(schema, def)
 	}
 	for _, name := range sortedASTDirectiveNames(schema.Directives) {
 		def := schema.Directives[name]
@@ -124,16 +132,17 @@ func modelFromAST(schema *ast.Schema) *Model {
 		}
 		model.Directives[def.Name] = directiveDefinitionFromAST(def)
 	}
+	model.buildOperations()
 	return model
 }
 
-func typeDefinitionFromAST(def *ast.Definition) *TypeDefinition {
+func typeDefinitionFromAST(schema *ast.Schema, def *ast.Definition) *TypeDefinition {
 	out := &TypeDefinition{
 		Kind:          string(def.Kind),
 		Name:          def.Name,
 		Description:   def.Description,
 		Interfaces:    append([]string(nil), def.Interfaces...),
-		PossibleTypes: append([]string(nil), def.Types...),
+		PossibleTypes: possibleTypesFromAST(schema, def),
 		Directives:    directiveUsesFromAST(def.Directives),
 		BuiltIn:       def.BuiltIn,
 	}
@@ -157,6 +166,32 @@ func typeDefinitionFromAST(def *ast.Definition) *TypeDefinition {
 			Directives:  directiveUsesFromAST(value.Directives),
 		})
 	}
+	return out
+}
+
+func possibleTypesFromAST(schema *ast.Schema, def *ast.Definition) []string {
+	if schema == nil || def == nil {
+		return nil
+	}
+	seen := map[string]bool{}
+	for _, name := range def.Types {
+		if strings.TrimSpace(name) != "" {
+			seen[name] = true
+		}
+	}
+	for _, possible := range schema.PossibleTypes[def.Name] {
+		if possible != nil && strings.TrimSpace(possible.Name) != "" {
+			seen[possible.Name] = true
+		}
+	}
+	if len(seen) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(seen))
+	for name := range seen {
+		out = append(out, name)
+	}
+	sort.Strings(out)
 	return out
 }
 

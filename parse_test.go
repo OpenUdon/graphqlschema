@@ -48,6 +48,14 @@ func TestParseSDLFixture(t *testing.T) {
 	if searchField == nil || searchField.Type.String() != "[SearchResult!]!" {
 		t.Fatalf("Query.search = %#v", searchField)
 	}
+	node, _ := model.TypeByName("Node")
+	if len(node.PossibleTypes) != 1 || node.PossibleTypes[0] != "Book" {
+		t.Fatalf("Node possible types = %#v", node.PossibleTypes)
+	}
+	searchResult, _ := model.TypeByName("SearchResult")
+	if len(searchResult.PossibleTypes) != 1 || searchResult.PossibleTypes[0] != "Book" {
+		t.Fatalf("SearchResult possible types = %#v", searchResult.PossibleTypes)
+	}
 
 	filter, _ := model.TypeByName("BookFilter")
 	statusInput := inputByName(filter.InputFields, "status")
@@ -72,6 +80,7 @@ func TestParseSDLFixture(t *testing.T) {
 	if scalar, ok := model.TypeByName("String"); !ok || !scalar.BuiltIn {
 		t.Fatalf("built-in scalar String missing or not marked built-in: %#v", scalar)
 	}
+	assertOperationsAndSelectors(t, model)
 }
 
 func TestParseIntrospectionFixture(t *testing.T) {
@@ -112,6 +121,7 @@ func TestParseIntrospectionFixture(t *testing.T) {
 	if tag := model.Directives["tag"]; tag == nil || !tag.Repeatable || tag.Arguments[0].DefaultValue != `"default"` {
 		t.Fatalf("tag directive = %#v", tag)
 	}
+	assertOperationsAndSelectors(t, model)
 }
 
 func TestParseAutoDetectsSourceKind(t *testing.T) {
@@ -154,6 +164,20 @@ func TestTypeByNameMisses(t *testing.T) {
 	}
 }
 
+func TestOperationByIDMisses(t *testing.T) {
+	model := parseSDLFixture(t)
+	if _, ok := model.OperationByID(""); ok {
+		t.Fatal("empty operation unexpectedly resolved")
+	}
+	if _, ok := model.OperationByID("query.missing"); ok {
+		t.Fatal("missing operation unexpectedly resolved")
+	}
+	var nilModel *graphqlschema.Model
+	if _, ok := nilModel.OperationByID("query.book"); ok {
+		t.Fatal("nil model unexpectedly resolved operation")
+	}
+}
+
 func TestMalformedInputs(t *testing.T) {
 	cases := []struct {
 		name string
@@ -183,6 +207,14 @@ func TestMalformedInputs(t *testing.T) {
 				return err
 			},
 			want: "parse graphql introspection JSON",
+		},
+		{
+			name: "trailing JSON",
+			run: func() error {
+				_, err := graphqlschema.ParseIntrospection([]byte(`{"__schema":{"types":[]}} {"__schema":{"types":[]}}`))
+				return err
+			},
+			want: "trailing data",
 		},
 		{
 			name: "missing schema",
@@ -225,6 +257,22 @@ func TestMalformedInputs(t *testing.T) {
 			want: "ofType must be an object for NON_NULL",
 		},
 		{
+			name: "unknown type ref kind",
+			run: func() error {
+				_, err := graphqlschema.ParseIntrospection([]byte(`{"__schema":{"types":[{"kind":"OBJECT","name":"Query","fields":[{"name":"x","type":{"kind":"BOGUS","name":"Thing"}}]}]}}`))
+				return err
+			},
+			want: "not a supported GraphQL type-ref kind",
+		},
+		{
+			name: "missing type ref kind",
+			run: func() error {
+				_, err := graphqlschema.ParseIntrospection([]byte(`{"__schema":{"types":[{"kind":"OBJECT","name":"Query","fields":[{"name":"x","type":{"name":"Thing"}}]}]}}`))
+				return err
+			},
+			want: "kind must be a string",
+		},
+		{
 			name: "malformed directive",
 			run: func() error {
 				_, err := graphqlschema.ParseIntrospection([]byte(`{"__schema":{"types":[],"directives":[{"name":"bad","locations":[1]}]}}`))
@@ -240,6 +288,72 @@ func TestMalformedInputs(t *testing.T) {
 				t.Fatalf("error = %v, want %q", err, tc.want)
 			}
 		})
+	}
+}
+
+func assertOperationsAndSelectors(t *testing.T, model *graphqlschema.Model) {
+	t.Helper()
+	got := make([]string, 0, len(model.Operations))
+	for _, op := range model.Operations {
+		got = append(got, op.ID)
+	}
+	want := []string{"query.book", "query.search", "mutation.checkout", "subscription.bookUpdated"}
+	if len(got) != len(want) {
+		t.Fatalf("operations = %#v, want %#v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("operations = %#v, want %#v", got, want)
+		}
+	}
+	book, ok := model.OperationByID("query.book")
+	if !ok {
+		t.Fatal("query.book operation missing")
+	}
+	if book.Kind != "query" || book.RootType != "Query" || book.FieldName != "book" || book.Type.String() != "Book" {
+		t.Fatalf("query.book = %#v", book)
+	}
+	if len(book.Arguments) != 1 || book.Arguments[0].Name != "id" || book.Arguments[0].Type.String() != "ID!" {
+		t.Fatalf("query.book args = %#v", book.Arguments)
+	}
+	for _, selector := range []string{
+		"query.book",
+		"#/operations/query.book",
+		"#/types/Query/fields/book",
+		"#/types/Mutation/fields/checkout",
+		"#/types/Subscription/fields/bookUpdated",
+	} {
+		target, ok := model.ResolveSelector(selector)
+		if !ok {
+			t.Fatalf("selector %q did not resolve", selector)
+		}
+		if target.Operation == nil || target.Field == nil || target.RootType == nil {
+			t.Fatalf("selector %q target incomplete: %#v", selector, target)
+		}
+		if !model.SelectorAliases()[selector] {
+			t.Fatalf("selector %q missing from aliases %#v", selector, model.SelectorAliases())
+		}
+	}
+	if target, ok := model.ResolveSelector("#/operations/query%2Ebook"); !ok || target.Operation.ID != "query.book" {
+		t.Fatalf("percent-encoded operation selector target = %#v, %v", target, ok)
+	}
+	for _, selector := range []string{
+		"query.missing",
+		"#/operations/query.missing",
+		"#/types/Query/fields/missing",
+		"#/types/Book/fields/title",
+		"#/components/schemas/Book",
+	} {
+		if target, ok := model.ResolveSelector(selector); ok {
+			t.Fatalf("selector %q unexpectedly resolved to %#v", selector, target)
+		}
+	}
+	var nilModel *graphqlschema.Model
+	if len(nilModel.SelectorAliases()) != 0 {
+		t.Fatal("nil model returned selector aliases")
+	}
+	if target, ok := nilModel.ResolveSelector("query.book"); ok {
+		t.Fatalf("nil model resolved selector to %#v", target)
 	}
 }
 

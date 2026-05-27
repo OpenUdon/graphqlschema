@@ -278,11 +278,16 @@ func typeRefFromIntrospection(raw any, context string) (*TypeRef, error) {
 			return nil, fmt.Errorf("%s.ofType must be an object for LIST", context)
 		}
 		return &TypeRef{Elem: ofType}, nil
-	default:
+	case "SCALAR", "OBJECT", "INTERFACE", "UNION", "ENUM", "INPUT_OBJECT":
 		if name == "" {
 			return nil, fmt.Errorf("%s.name must be a string", context)
 		}
 		return &TypeRef{NamedType: name}, nil
+	default:
+		if kind == "" {
+			return nil, fmt.Errorf("%s.kind must be a string", context)
+		}
+		return nil, fmt.Errorf("%s.kind %q is not a supported GraphQL type-ref kind", context, kind)
 	}
 }
 

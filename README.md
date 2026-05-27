@@ -5,8 +5,8 @@ Dependency-light Go metadata package for GraphQL schema artifacts.
 `github.com/OpenUdon/graphqlschema` parses GraphQL SDL and introspection JSON
 into native metadata for downstream authoring, packaging, validation, and
 review tools. The package is intentionally schema-first: it preserves GraphQL
-types, fields, arguments, directives, and operation roots without executing
-GraphQL operations.
+types, fields, arguments, directives, operation roots, and selector metadata
+without executing GraphQL operations.
 
 ## Install
 
@@ -44,6 +44,9 @@ func main() {
 	}
 
 	fmt.Printf("query root %q with %d types\n", model.QueryType, len(model.Types))
+	if op, ok := model.OperationByID("query.book"); ok {
+		fmt.Printf("%s returns %s\n", op.ID, op.Type)
+	}
 }
 ```
 
@@ -54,6 +57,11 @@ func main() {
 - `ParseIntrospection` parses JSON introspection responses.
 - `ParseIntrospectionMap` parses an already-decoded introspection response.
 - `TypeByName` looks up parsed type metadata by GraphQL type name.
+- `OperationByID` looks up selectable root fields such as `query.book`.
+- `SelectorAliases` lists canonical operation IDs and local JSON Pointer
+  selectors.
+- `ResolveSelector` resolves operation IDs, `#/operations/{id}`, and
+  `#/types/{rootType}/fields/{fieldName}` pointers.
 
 ## Verification
 
