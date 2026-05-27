@@ -68,6 +68,9 @@ func main() {
 See [Consumer Readiness](docs/consumer-readiness.md) for `apitools`, OpenUdon,
 and UWS source-profile planning boundaries.
 
+See [UWS Source-Profile Evidence](docs/uws-source-profile-evidence.md) for the
+non-normative GraphQL source-profile evidence recorded by this package.
+
 ## Verification
 
 ```bash

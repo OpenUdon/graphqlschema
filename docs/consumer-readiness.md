@@ -3,6 +3,9 @@
 `graphqlschema` is ready for source-aware consumers that need local GraphQL
 schema metadata without executing GraphQL operations.
 
+For UWS 1.4 planning evidence, see
+[UWS Source-Profile Evidence](uws-source-profile-evidence.md).
+
 ## Stable API Surface
 
 The current consumer-facing surface is:
