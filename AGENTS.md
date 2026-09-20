@@ -23,23 +23,23 @@ select production accounts.
 
 Before substantial changes, read these in order:
 
-1. [memory-bank/product.md](memory-bank/product.md)
-2. [memory-bank/architecture.md](memory-bank/architecture.md)
-3. [memory-bank/tech-stack.md](memory-bank/tech-stack.md)
-4. [memory-bank/milestone.md](memory-bank/milestone.md)
+1. [tabilet/memory-bank/product.md](tabilet/memory-bank/product.md)
+2. [tabilet/memory-bank/architecture.md](tabilet/memory-bank/architecture.md)
+3. [tabilet/memory-bank/tech-stack.md](tabilet/memory-bank/tech-stack.md)
+4. [tabilet/memory-bank/milestone.md](tabilet/memory-bank/milestone.md)
 5. The relevant permanent status file, such as
-   [memory-bank/status-M01.md](memory-bank/status-M01.md)
+   [tabilet/memory-bank/status-M01.md](tabilet/memory-bank/status-M01.md)
 
 Keep the memory bank short and module-specific. Do not copy catalog, CLI, UWS,
 OpenUdon, or runtime-plan concerns from sibling repositories.
 
-This project exposes [GOAL.md](GOAL.md), one optional protocol for goal requests
+This project exposes [tabilet/GOAL.md](tabilet/GOAL.md), one optional protocol for goal requests
 that span multiple status files. Follow it only when a request names it.
 
-A `GOAL.md` run is a deliberate exception to the row-level commit rule below.
+A `tabilet/GOAL.md` run is a deliberate exception to the row-level commit rule below.
 For that run, `COMMIT_POLICY: none` — the protocol default — means no commits,
 while `COMMIT_POLICY: task` keeps the usual one-commit-per-row cadence.
-Precedence is the request, then `GOAL.md`, then this file; only commits are
+Precedence is the request, then `tabilet/GOAL.md`, then this file; only commits are
 delegated, and only during the run.
 
 ## Boundary
